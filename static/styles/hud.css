@@ -1,0 +1,578 @@
+/* ==========================================================================
+   NEXUS GENOME // HUD & DATA MAPPING INTERFACE STYLES
+   Semi-transparent Biotech HUD Panel, Gene Cards, Laser Connectors & Waveforms
+   ========================================================================== */
+
+/* Dynamic SVG Laser Connector Overlay */
+.hud-connector-svg {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 8;
+}
+
+.laser-path {
+  fill: none;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: d 0.05s ease-out;
+}
+
+.laser-cyan {
+  stroke: url(#laserGradCyan);
+  filter: drop-shadow(0 0 6px rgba(0, 240, 255, 0.8));
+  stroke-dasharray: 8, 4;
+  animation: laserStream 1.5s linear infinite;
+}
+
+.laser-emerald {
+  stroke: url(#laserGradEmerald);
+  filter: drop-shadow(0 0 6px rgba(56, 239, 125, 0.8));
+  stroke-dasharray: 8, 4;
+  animation: laserStream 1.8s linear infinite;
+}
+
+.laser-magenta {
+  stroke: url(#laserGradMagenta);
+  filter: drop-shadow(0 0 6px rgba(255, 42, 133, 0.8));
+  stroke-dasharray: 8, 4;
+  animation: laserStream 2s linear infinite;
+}
+
+@keyframes laserStream {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+
+/* ==========================================================================
+   HUD PANEL CONTAINER (LOWER-RIGHT POSITIONING)
+   ========================================================================== */
+.hero-hud-panel {
+  pointer-events: auto;
+  position: relative;
+  z-index: 12;
+  width: 100%;
+  max-width: 490px;
+  justify-self: end;
+}
+
+.hud-glass-card {
+  background: var(--bg-glass);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--border-cyan);
+  border-radius: 14px;
+  padding: 22px;
+  box-shadow:
+    0 16px 40px rgba(0, 0, 0, 0.5),
+    0 0 30px rgba(0, 240, 255, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+/* HUD Top Accent Light Bar */
+.hud-glass-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--cyan-bright), var(--emerald-accent), transparent);
+}
+
+/* HUD Header */
+.hud-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.hud-title-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hud-glyph {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: rgba(0, 240, 255, 0.12);
+  border: 1px solid var(--cyan-bright);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--cyan-bright);
+  font-size: 0.9rem;
+  box-shadow: 0 0 10px var(--cyan-glow);
+}
+
+.hud-title {
+  font-family: var(--font-headline);
+  font-size: 0.96rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #ffffff;
+}
+
+.hud-subtitle {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  letter-spacing: 0.06em;
+}
+
+.hud-header-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: rgba(56, 239, 125, 0.1);
+  border: 1px solid rgba(56, 239, 125, 0.4);
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--emerald-accent);
+}
+
+.pulse-emerald {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--emerald-accent);
+  box-shadow: 0 0 8px var(--emerald-accent);
+  animation: pulseBeacon 1.4s infinite ease-in-out;
+}
+
+/* ==========================================================================
+   GENE COORDINATE MAPPING LIST (GENE 1, GENE 2, GENE 3)
+   ========================================================================== */
+.hud-gene-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.hud-gene-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  background: rgba(14, 26, 45, 0.7);
+  border: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--cyan-bright);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+.hud-gene-card:hover {
+  background: rgba(19, 35, 60, 0.95);
+  border-color: var(--cyan-bright);
+  transform: translateX(4px);
+  box-shadow: 0 4px 20px rgba(0, 240, 255, 0.2);
+}
+
+.hud-gene-card.active {
+  background: rgba(0, 240, 255, 0.08);
+  border-color: var(--cyan-bright);
+  box-shadow:
+    0 0 20px rgba(0, 240, 255, 0.25),
+    inset 0 0 15px rgba(0, 240, 255, 0.05);
+}
+
+/* Specific Gene Color Accents */
+#hudGene2 {
+  border-left-color: var(--emerald-accent);
+}
+
+#hudGene2:hover,
+#hudGene2.active {
+  border-color: var(--emerald-accent);
+  box-shadow: 0 0 20px rgba(56, 239, 125, 0.25);
+}
+
+#hudGene3 {
+  border-left-color: var(--magenta-accent);
+}
+
+#hudGene3:hover,
+#hudGene3.active {
+  border-color: var(--magenta-accent);
+  box-shadow: 0 0 20px rgba(255, 42, 133, 0.25);
+}
+
+/* Reticle Target Pin */
+.gene-card-reticle {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.reticle-pin {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--cyan-bright);
+  box-shadow: 0 0 8px var(--cyan-bright);
+}
+
+.reticle-ring {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px dashed var(--cyan-bright);
+  animation: spinReticle 6s linear infinite;
+}
+
+.pin-emerald {
+  background: var(--emerald-accent);
+  box-shadow: 0 0 8px var(--emerald-accent);
+}
+
+.ring-emerald {
+  border-color: var(--emerald-accent);
+}
+
+.pin-magenta {
+  background: var(--magenta-accent);
+  box-shadow: 0 0 8px var(--magenta-accent);
+}
+
+.ring-magenta {
+  border-color: var(--magenta-accent);
+}
+
+@keyframes spinReticle {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Gene Info */
+.gene-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.gene-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 3px;
+}
+
+.gene-id-badge {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  background: rgba(0, 240, 255, 0.15);
+  color: var(--cyan-bright);
+  border-radius: 3px;
+  letter-spacing: 0.05em;
+}
+
+.badge-emerald {
+  background: rgba(56, 239, 125, 0.15);
+  color: var(--emerald-accent);
+}
+
+.badge-magenta {
+  background: rgba(255, 42, 133, 0.15);
+  color: var(--magenta-accent);
+}
+
+.gene-symbol {
+  font-family: var(--font-headline);
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 0.04em;
+}
+
+.gene-type-tag {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+.tag-high {
+  background: rgba(255, 75, 75, 0.2);
+  color: #ff5e5e;
+}
+
+.tag-pathogenic {
+  background: rgba(255, 179, 0, 0.2);
+  color: #ffb300;
+}
+
+.tag-targetable {
+  background: rgba(0, 230, 118, 0.2);
+  color: #00e676;
+}
+
+.gene-coordinates {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 5px;
+}
+
+.gene-coordinates i {
+  font-size: 0.65rem;
+  color: var(--cyan-bright);
+}
+
+.gene-meta-metrics {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.meta-metric {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+}
+
+.m-label {
+  color: var(--text-muted);
+}
+
+.m-val {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.val-cyan {
+  color: var(--cyan-bright);
+}
+
+.val-emerald {
+  color: var(--emerald-accent);
+}
+
+.val-magenta {
+  color: var(--magenta-accent);
+}
+
+.val-alert {
+  color: #ff5e5e;
+}
+
+.val-patho {
+  color: #ffb300;
+}
+
+.val-action {
+  color: #00e676;
+}
+
+.gene-inspect-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.gene-inspect-btn:hover {
+  background: var(--cyan-bright);
+  border-color: var(--cyan-bright);
+  color: #05101e;
+  box-shadow: 0 0 10px var(--cyan-bright);
+}
+
+/* ==========================================================================
+   REAL-TIME CHROMATOGRAM SPECTROGRAM MODULE
+   ========================================================================== */
+.hud-spectral-module {
+  background: rgba(7, 14, 24, 0.85);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+.spectral-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.spectral-title {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--cyan-bright);
+  letter-spacing: 0.06em;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.spectral-status {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.spectral-canvas-box {
+  width: 100%;
+  height: 65px;
+  background: #040912;
+  border: 1px solid rgba(0, 240, 255, 0.15);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+#chromatogramCanvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Base Composition Grid (A, T, G, C) */
+.base-composition-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.base-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  background: rgba(14, 26, 45, 0.6);
+  border-radius: 4px;
+}
+
+.b-char {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.base-a .b-char {
+  color: #00f0ff;
+}
+
+.base-t .b-char {
+  color: #ffb300;
+}
+
+.base-g .b-char {
+  color: #38ef7d;
+}
+
+.base-c .b-char {
+  color: #ff2a85;
+}
+
+.b-bar {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.b-fill {
+  height: 100%;
+}
+
+.base-a .b-fill {
+  background: #00f0ff;
+  box-shadow: 0 0 5px #00f0ff;
+}
+
+.base-t .b-fill {
+  background: #ffb300;
+  box-shadow: 0 0 5px #ffb300;
+}
+
+.base-g .b-fill {
+  background: #38ef7d;
+  box-shadow: 0 0 5px #38ef7d;
+}
+
+.base-c .b-fill {
+  background: #ff2a85;
+  box-shadow: 0 0 5px #ff2a85;
+}
+
+.b-pct {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+/* HUD Footer Actions */
+.hud-footer-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.hud-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(14, 26, 45, 0.8);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-family: var(--font-headline);
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.hud-action-btn:hover {
+  border-color: var(--cyan-bright);
+  color: var(--cyan-bright);
+  background: rgba(0, 240, 255, 0.1);
+  box-shadow: 0 0 12px var(--cyan-glow-subtle);
+}

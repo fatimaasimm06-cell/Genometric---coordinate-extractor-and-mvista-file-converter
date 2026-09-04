@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NEXUS GENOME // GenBank &amp; mVISTA Annotation Converter</title>
+  <meta name="description" content="Convert GenBank files to mVISTA format guidelines and extract genomic coordinates.">
+
+  <!-- Modern Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@500;700;800&family=Syne:wght@700;800&display=swap"
+    rel="stylesheet">
+
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="/static/styles/main.css">
+  <link rel="stylesheet" href="/static/styles/hud.css">
+  <link rel="stylesheet" href="/static/styles/modal.css">
+
+  <!-- Three.js & OrbitControls -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+
+<body class="biotech-theme">
+  <!-- Ambient Overlays -->
+  <div class="hud-scanline-overlay" aria-hidden="true"></div>
+  <div class="hud-ambient-glow" aria-hidden="true"></div>
+  <div class="hud-grid-background" aria-hidden="true"></div>
+
+  <!-- Dynamic SVG Laser Connectors -->
+  <svg id="hudConnectorSvg" class="hud-connector-svg" aria-hidden="true">
+    <defs>
+      <linearGradient id="laserGradCyan" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#00f0ff" stop-opacity="0.9" />
+        <stop offset="70%" stop-color="#00f0ff" stop-opacity="0.4" />
+        <stop offset="100%" stop-color="#00f0ff" stop-opacity="0.05" />
+      </linearGradient>
+      <linearGradient id="laserGradEmerald" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#38ef7d" stop-opacity="0.9" />
+        <stop offset="70%" stop-color="#38ef7d" stop-opacity="0.4" />
+        <stop offset="100%" stop-color="#38ef7d" stop-opacity="0.05" />
+      </linearGradient>
+      <linearGradient id="laserGradMagenta" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#ff2a85" stop-opacity="0.9" />
+        <stop offset="70%" stop-color="#ff2a85" stop-opacity="0.4" />
+        <stop offset="100%" stop-color="#ff2a85" stop-opacity="0.05" />
+      </linearGradient>
+    </defs>
+    <path id="laserGene1" class="laser-path laser-cyan" d="" />
+    <path id="laserGene2" class="laser-path laser-emerald" d="" />
+    <path id="laserGene3" class="laser-path laser-magenta" d="" />
+  </svg>
+
+  <!-- 3D DNA Canvas Background Container -->
+  <div id="dnaCanvasContainer" class="dna-canvas-container">
+    <canvas id="dnaCanvas"></canvas>
+    <div class="viewport-hud-controls">
+      <div class="control-badge">
+        <span class="pulse-dot"></span> 3D INTERACTIVE HELIX // DRAG TO ROTATE
+      </div>
+      <div class="viewport-quick-tools">
+        <button id="btnResetView" class="tool-btn" title="Reset View"><i class="fa-solid fa-arrows-rotate"></i></button>
+        <button id="btnToggleScanner" class="tool-btn active" title="Toggle Scanner Laser"><i
+            class="fa-solid fa-barcode"></i></button>
+        <button id="btnToggleParticles" class="tool-btn active" title="Toggle Nucleotide Flow"><i
+            class="fa-solid fa-atom"></i></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Minimal Top Navigation Bar with Mode Tabs -->
+  <header class="top-nav-bar" id="topNavBar">
+    <div class="nav-container">
+      <a href="#" class="brand-logo">
+        <div class="brand-icon">
+          <div class="helix-symbol"><span></span><span></span><span></span></div>
+        </div>
+        <div class="brand-text">
+          <span class="brand-title">NEXUS<span class="brand-accent">//</span>VISTA</span>
+          <span class="brand-sub">GENBANK &amp; MVISTA CONVERTER</span>
+        </div>
+      </a>
+
+      <!-- Navigation Mode Switcher -->
+      <nav class="nav-menu">
+        <ul class="nav-links">
+          <li>
+            <button class="nav-link tab-switch-btn" id="tabBtnExtractor" data-tab="extractor">
+              <i class="fa-solid fa-dna"></i> Coordinate Extractor
+            </button>
+          </li>
+          <li>
+            <button class="nav-link active tab-switch-btn" id="tabBtnMvista" data-tab="mvista">
+              <i class="fa-solid fa-file-export"></i> mVISTA Converter
+            </button>
+          </li>
+        </ul>
+      </nav>
+
+      <!-- Navigation Actions -->
+      <div class="nav-actions">
+        <button id="audioToggleBtn" class="audio-toggle-btn" title="Toggle UI Sound Feedback">
+          <i class="fa-solid fa-volume-xmark" id="audioIcon"></i>
+          <span class="audio-tag">AUDIO: OFF</span>
+        </button>
+        <button class="btn-primary-signup" id="btnLaunchConverter">
+          <i class="fa-solid fa-file-export"></i>
+          <span class="btn-text">Open mVISTA Converter</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Hero Layout -->
+  <main class="hero-section" id="heroSection">
+    <div class="hero-container">
+
+      <!-- Left Hero Content -->
+      <div class="hero-content-left" id="heroLeft">
+
+        <!-- Tab 1: Coordinate Extractor -->
+        <div id="viewExtractor" class="tab-view-content" style="display: none;">
+          <div class="hero-badge animate-fade-in">
+            <span class="badge-pulse"></span>
+            <span class="badge-tag">MODE 1</span>
+            <span class="badge-divider">/</span>
+            <span class="badge-sub">GENBANK COORDINATE EXTRACTOR</span>
+          </div>
+
+          <h1 class="hero-headline animate-fade-in-delay-1">
+            ACCELERATE DISCOVERY:
+            <span class="gradient-text-cyan">GENOMIC FEATURE</span>
+            <span class="gradient-text-teal">EXTRACTION</span>
+          </h1>
+
+          <p class="hero-subheadline animate-fade-in-delay-2">
+            Upload GenBank (<span style="color: var(--cyan-bright); font-family: var(--font-mono);">.gb</span>, <span
+              style="color: var(--cyan-bright); font-family: var(--font-mono);">.gbk</span>) files to parse gene &amp;
+            CDS boundaries with 1-based indexing and strand orientations.
+          </p>
+
+          <div class="hero-cta-group animate-fade-in-delay-3">
+            <button class="btn-hero-cta" id="btnOpenExtractModal">
+              <span class="cta-inner">
+                <span class="cta-icon"><i class="fa-solid fa-file-arrow-up"></i></span>
+                <span class="cta-text">EXTRACT COORDINATES</span>
+                <span class="cta-arrow"><i class="fa-solid fa-arrow-trend-up"></i></span>
+              </span>
+              <span class="cta-scan-light"></span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Tab 2: mVISTA Converter -->
+        <div id="viewMvista" class="tab-view-content active">
+          <div class="hero-badge animate-fade-in">
+            <span class="badge-pulse"
+              style="background: var(--emerald-accent); box-shadow: 0 0 10px var(--emerald-accent);"></span>
+            <span class="badge-tag" style="color: var(--emerald-accent);">MODE 2</span>
+            <span class="badge-divider">/</span>
+            <span class="badge-sub">OFFICIAL MVISTA FORMAT CONVERTER</span>
+          </div>
+
+          <h1 class="hero-headline animate-fade-in-delay-1">
+            GENBANK TO
+            <span class="gradient-text-teal">MVISTA VISTA</span>
+            <span class="gradient-text-cyan">FORMAT</span>
+          </h1>
+
+          <p class="hero-subheadline animate-fade-in-delay-2">
+            Converts CDS, exons, genes, and non-coding RNA into official mVISTA guidelines (<span
+              style="color: var(--emerald-accent); font-family: var(--font-mono);">&gt; start end type label</span>)
+            ready for instant upload to the mVISTA comparative genomics server.
+          </p>
+
+          <div class="hero-cta-group animate-fade-in-delay-3">
+            <button class="btn-hero-cta" id="btnOpenMvistaModal">
+              <span class="cta-inner">
+                <span class="cta-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
+                <span class="cta-text">CONVERT TO MVISTA (.VISTA)</span>
+                <span class="cta-arrow"><i class="fa-solid fa-arrow-trend-up"></i></span>
+              </span>
+              <span class="cta-scan-light"></span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Telemetry KPIs -->
+        <div class="hero-telemetry-bar animate-fade-in-delay-4">
+          <div class="telemetry-item">
+            <div class="telem-header"><span class="telem-label">PARSER</span><i
+                class="fa-solid fa-microchip telem-icon"></i></div>
+            <div class="telem-value">SeqIO <span class="telem-unit">BioPython</span></div>
+            <div class="telem-bar">
+              <div class="telem-fill" style="width: 100%;"></div>
+            </div>
+          </div>
+          <div class="telemetry-item">
+            <div class="telem-header"><span class="telem-label">SPECIFICATION</span><i
+                class="fa-solid fa-check-double telem-icon"></i></div>
+            <div class="telem-value">mVISTA <span class="telem-unit">Compliant</span></div>
+            <div class="telem-bar">
+              <div class="telem-fill telem-emerald" style="width: 100%;"></div>
+            </div>
+          </div>
+          <div class="telemetry-item">
+            <div class="telem-header"><span class="telem-label">OUTPUT</span><i
+                class="fa-solid fa-file-code telem-icon"></i></div>
+            <div class="telem-value">.vista <span class="telem-unit">Format</span></div>
+            <div class="telem-bar">
+              <div class="telem-fill telem-cyan" style="width: 100%;"></div>
+            </div>
+          </div>
+          <div class="telemetry-item">
+            <div class="telem-header"><span class="telem-label">STATUS</span><i class="fa-solid fa-bolt telem-icon"></i>
+            </div>
+            <div class="telem-value" id="statusExtractedCount">Ready <span class="telem-unit">for File</span></div>
+            <div class="telem-bar">
+              <div class="telem-fill telem-magenta" id="statusExtractedBar" style="width: 20%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live FastQ Ticker -->
+        <div class="live-fastq-stream animate-fade-in-delay-5">
+          <div class="stream-header">
+            <span class="stream-tag"><i class="fa-solid fa-terminal"></i> LIVE STREAMING NUCLEOTIDES</span>
+            <span class="stream-bps">60 FPS WebGL</span>
+          </div>
+          <div class="stream-ticker" id="fastqStreamTicker">
+            <span class="seq-read">@READ: <span class="seq-a">A</span><span class="seq-t">T</span><span
+                class="seq-g">G</span><span class="seq-c">C</span><span class="seq-t">T</span><span
+                class="seq-a">A</span><span class="seq-g">G</span><span class="seq-c">C</span></span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right HUD Panel -->
+      <aside class="hero-hud-panel" id="heroHudPanel">
+        <div class="hud-glass-card">
+          <div class="hud-card-header">
+            <div class="hud-title-wrapper">
+              <div class="hud-glyph"><i class="fa-solid fa-dna"></i></div>
+              <div>
+                <h2 class="hud-title">GENE COORDINATE MAPPING</h2>
+                <div class="hud-subtitle">3D LOCUS ALIGNMENT // LIVE PREVIEW</div>
+              </div>
+            </div>
+            <div class="hud-header-badge"><span class="pulse-emerald"></span> SYNCED</div>
+          </div>
+
+          <!-- Live Gene Cards -->
+          <div class="hud-gene-list">
+            <div class="hud-gene-card active" id="hudGene1">
+              <div class="gene-card-reticle"><span class="reticle-pin"></span><span class="reticle-ring"></span></div>
+              <div class="gene-info">
+                <div class="gene-name-row">
+                  <span class="gene-id-badge">GENE 1</span>
+                  <span class="gene-symbol" id="card1Symbol">BRCA1</span>
+                  <span class="gene-type-tag tag-high">CDS</span>
+                </div>
+                <div class="gene-coordinates" id="card1Locus"><i class="fa-solid fa-location-crosshairs"></i> &gt; 120
+                  1450 (Forward)</div>
+              </div>
+            </div>
+
+            <div class="hud-gene-card" id="hudGene2">
+              <div class="gene-card-reticle"><span class="reticle-pin pin-emerald"></span><span
+                  class="reticle-ring ring-emerald"></span></div>
+              <div class="gene-info">
+                <div class="gene-name-row">
+                  <span class="gene-id-badge badge-emerald">GENE 2</span>
+                  <span class="gene-symbol" id="card2Symbol">TP53</span>
+                  <span class="gene-type-tag tag-pathogenic">CDS</span>
+                </div>
+                <div class="gene-coordinates" id="card2Locus"><i class="fa-solid fa-location-crosshairs"></i> &lt; 1600
+                  2890 (Reverse)</div>
+              </div>
+            </div>
+
+            <div class="hud-gene-card" id="hudGene3">
+              <div class="gene-card-reticle"><span class="reticle-pin pin-magenta"></span><span
+                  class="reticle-ring ring-magenta"></span></div>
+              <div class="gene-info">
+                <div class="gene-name-row">
+                  <span class="gene-id-badge badge-magenta">GENE 3</span>
+                  <span class="gene-symbol" id="card3Symbol">EGFR</span>
+                  <span class="gene-type-tag tag-targetable">GENE</span>
+                </div>
+                <div class="gene-coordinates" id="card3Locus"><i class="fa-solid fa-location-crosshairs"></i> &gt; 3100
+                  4580 (Forward)</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Chromatogram Spectrogram -->
+          <div class="hud-spectral-module">
+            <div class="spectral-header">
+              <span class="spectral-title"><i class="fa-solid fa-wave-square"></i> REAL-TIME CHROMATOGRAM
+                SPECTROGRAM</span>
+              <span class="spectral-status">LIVE SANGER PEAKS</span>
+            </div>
+            <div class="spectral-canvas-box">
+              <canvas id="chromatogramCanvas" width="340" height="70"></canvas>
+            </div>
+            <div class="base-composition-grid">
+              <div class="base-col base-a"><span class="b-char">A</span>
+                <div class="b-bar">
+                  <div class="b-fill" style="height: 29.4%;"></div>
+                </div><span class="b-pct">29.4%</span>
+              </div>
+              <div class="base-col base-t"><span class="b-char">T</span>
+                <div class="b-bar">
+                  <div class="b-fill" style="height: 29.8%;"></div>
+                </div><span class="b-pct">29.8%</span>
+              </div>
+              <div class="base-col base-g"><span class="b-char">G</span>
+                <div class="b-bar">
+                  <div class="b-fill" style="height: 20.3%;"></div>
+                </div><span class="b-pct">20.3%</span>
+              </div>
+              <div class="base-col base-c"><span class="b-char">C</span>
+                <div class="b-bar">
+                  <div class="b-fill" style="height: 20.5%;"></div>
+                </div><span class="b-pct">20.5%</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </aside>
+
+    </div>
+  </main>
+
+  <!-- Interactive File Upload & Converter Modal -->
+  <div class="modal-overlay" id="analysisModal" aria-hidden="true" role="dialog">
+    <div class="modal-window">
+
+      <!-- Modal Header -->
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <div class="modal-icon"><i class="fa-solid fa-file-export"></i></div>
+          <div>
+            <h3 class="modal-title" id="modalHeaderTitle">MVISTA GUIDELINE CONVERTER</h3>
+            <p class="modal-subtitle" id="modalHeaderSubtitle">Upload GenBank (.gb/.gbk) to generate compliant mVISTA
+              annotation files</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" id="btnCloseModal" aria-label="Close Modal"><i
+            class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="modal-body">
+
+        <!-- Feature Filter Checkboxes -->
+        <div id="mvistaOptionsBar"
+          style="background: rgba(14, 26, 45, 0.6); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px 16px;">
+          <span
+            style="font-family: var(--font-mono); font-size: 0.72rem; font-weight: 700; color: var(--cyan-bright); display: block; margin-bottom: 8px;">
+            <i class="fa-solid fa-filter"></i> INCLUDED MVISTA FEATURE TYPES:
+          </span>
+          <div
+            style="display: flex; flex-wrap: wrap; gap: 14px; font-family: var(--font-mono); font-size: 0.76rem; color: var(--text-secondary);">
+            <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+              <input type="checkbox" class="feature-checkbox" value="CDS" checked> <strong
+                style="color: #ffffff;">CDS</strong> (Coding Regions)
+            </label>
+            <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+              <input type="checkbox" class="feature-checkbox" value="gene" checked> <strong
+                style="color: #ffffff;">gene</strong> (Gene Loci)
+            </label>
+            <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+              <input type="checkbox" class="feature-checkbox" value="exon" checked> exon
+            </label>
+            <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+              <input type="checkbox" class="feature-checkbox" value="tRNA" checked> tRNA
+            </label>
+            <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+              <input type="checkbox" class="feature-checkbox" value="rRNA" checked> rRNA
+            </label>
+            <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+              <input type="checkbox" class="feature-checkbox" value="UTR"> UTR
+            </label>
+          </div>
+        </div>
+
+        <!-- File Drop & Native Browse Area -->
+        <label for="genbankFileInput" class="sequence-editor-wrapper" id="dropZone"
+          style="display: block; padding: 24px 20px; text-align: center; cursor: pointer; border: 2px dashed var(--cyan-bright); background: rgba(0, 240, 255, 0.04); border-radius: 8px; transition: all 0.2s ease;">
+          <input type="file" id="genbankFileInput" accept=".gb,.gbk,.genbank,.txt,.embl" style="display: none;">
+          <i class="fa-solid fa-cloud-arrow-up"
+            style="font-size: 2.4rem; color: var(--cyan-bright); margin-bottom: 10px; display: block;"></i>
+          <p
+            style="font-family: var(--font-headline); font-size: 1.05rem; font-weight: 700; color: #ffffff; margin-bottom: 6px;">
+            Click to Browse or Drag &amp; Drop GenBank File
+          </p>
+          <span
+            style="display: inline-block; padding: 5px 14px; background: rgba(0, 240, 255, 0.15); border: 1px solid var(--cyan-bright); border-radius: 4px; color: var(--cyan-bright); font-family: var(--font-mono); font-size: 0.72rem; margin-bottom: 6px;">
+            <i class="fa-solid fa-folder-open"></i> Choose File
+          </span>
+          <p style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-secondary);"
+            id="selectedFileName">
+            Supported: .gb, .gbk, .genbank, .embl, .txt
+          </p>
+        </label>
+
+        <!-- Output / Results Box -->
+        <div class="sequence-editor-wrapper">
+          <div class="editor-header">
+            <span><i class="fa-solid fa-code"></i> MVISTA GUIDELINE OUTPUT (<span id="featuresCount">0
+                features</span>)</span>
+            <div class="editor-stats">
+              <button id="btnCopyResults"
+                style="background: transparent; border: 1px solid var(--border-cyan); color: var(--cyan-bright); border-radius: 4px; padding: 2px 8px; font-family: var(--font-mono); font-size: 0.68rem; cursor: pointer;">
+                <i class="fa-solid fa-copy"></i> Copy Output
+              </button>
+            </div>
+          </div>
+          <div class="editor-display" id="vistaOutputDisplay"
+            style="height: 180px; max-height: 180px; white-space: pre; font-family: var(--font-mono); font-size: 0.8rem; color: var(--emerald-accent);">
+            Upload a GenBank file to convert into mVISTA annotation guidelines here...
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="modal-footer">
+        <button class="btn-modal-secondary" id="btnDownloadVista">
+          <i class="fa-solid fa-download"></i> Download .vista
+        </button>
+        <button class="btn-modal-primary" id="btnExecuteConvert">
+          <i class="fa-solid fa-wand-magic-sparkles"></i> Convert to mVISTA
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
+  <!-- Scripts -->
+  <script src="/static/js/audio-engine.js"></script>
+  <script src="/static/js/sequence-stream.js"></script>
+  <script src="/static/js/hud-connectors.js"></script>
+  <script src="/static/js/dna-scene.js"></script>
+  <script src="/static/js/app.js"></script>
+</body>
+
+</html>
